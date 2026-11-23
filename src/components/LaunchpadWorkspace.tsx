@@ -340,8 +340,13 @@ const tx = buildRegisterConfigAndCreateAmmoraV4Launch(
                 maxLength={12}
                 value={form.symbol}
                 onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase() })}
-                className="w-full rounded-lg border border-slate-700 bg-[#0B101B] px-3 py-2 font-mono text-sm text-slate-100 outline-none focus:border-emerald-500"
+                className={`w-full rounded-lg border bg-[#0B101B] px-3 py-2 font-mono text-sm text-slate-100 outline-none focus:border-emerald-500 ${
+                  form.symbol.trim() ? 'border-slate-700' : 'border-rose-500'
+                }`}
               />
+              {!form.symbol.trim() && (
+                <p className="mt-1.5 text-xs text-rose-400">Ticker symbol is required.</p>
+              )}
             </div>
             <div className="sm:col-span-1">
               <label htmlFor="launch-name" className="block text-xs font-medium text-slate-300 mb-1.5">
