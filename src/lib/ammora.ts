@@ -1169,6 +1169,24 @@ export function buildLaunchpadPlan(input: LaunchpadFormInput, existingConfigId: 
     const lockedBaseRaw = (totalSupplyRaw * lockBps) / 10000n;
     const baseBudgetRaw = totalSupplyRaw - saleAllocationRaw - lockedBaseRaw;
 
+    // The SDK requires the vesting schedule to sum exactly to the locked
+    // allocation: cliffUnlockAmount + amountPerPeriod * numberOfPeriods === lockedBaseRaw.
+    // It also treats an all-zero schedule as "empty" (valid only when nothing is locked)
+    // and rejects a schedule with a nonzero frequency but a zero per-period amount.
+    // So: no lock -> empty schedule; a lock -> 12 monthly periods, with any
+    // indivisible remainder (at most 11 raw units) unlocking at the cliff.
+    // (Inputs are clamped so a nonzero lock is always >= 1e5 raw units, so the
+    // per-period amount is never zero when a lock exists.)
+    const LOCK_VESTING_PERIODS = 12;
+    const LOCK_VESTING_FREQUENCY_SECONDS = 30n * 24n * 60n * 60n; // 30 days
+    const hasLockedBase = lockedBaseRaw > 0n;
+    const lockAmountPerPeriod = hasLockedBase ? lockedBaseRaw / BigInt(LOCK_VESTING_PERIODS) : 0n;
+    const lockCliffUnlockAmount = hasLockedBase
+      ? lockedBaseRaw - lockAmountPerPeriod * BigInt(LOCK_VESTING_PERIODS)
+      : 0n;
+    const lockVestingPeriods = hasLockedBase ? LOCK_VESTING_PERIODS : 0;
+    const lockVestingFrequency = hasLockedBase ? LOCK_VESTING_FREQUENCY_SECONDS : 0n;
+
     const startFdv = parseDecimalToRational(input.startFdvWeth);
     const gradFdv = parseDecimalToRational(input.graduationFdvWeth);
 
@@ -1290,10 +1308,10 @@ export function buildLaunchpadPlan(input: LaunchpadFormInput, existingConfigId: 
           creatorVesting: { allocationBps: 0, bpsPerPeriod: 0, numberOfPeriods: 0, periodFrequency: 0, cliffDuration: 0 },
         },
         lockedBaseVesting: {
-          cliffUnlockAmount: 0n,
-          amountPerPeriod: 0n,
-          numberOfPeriods: 0,
-          frequency: 0n,
+          cliffUnlockAmount: lockCliffUnlockAmount,
+          amountPerPeriod: lockAmountPerPeriod,
+          numberOfPeriods: lockVestingPeriods,
+          frequency: lockVestingFrequency,
           cliffDuration: 0n,
         },
         postMigrationFeeNumberOfPeriods: 0,
