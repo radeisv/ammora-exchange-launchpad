@@ -1,0 +1,6 @@
+{
+  "name": "Ammora Exchange & Launchpad",
+  "description": "Token launchpad, low-slippage swap router, and LP staking vaults built with @ammora-protocol/sdk on GIWA Sepolia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
